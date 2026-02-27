@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wheel of Fate — The Stars Shall Decide</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@400;700&family=MedievalSharp&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --midnight: #050a1a;
+  --deep-blue: #0a1628;
+  --sky-blue: #0d2044;
+  --gold: #f5c842;
+  --pale-gold: #fde87a;
+  --ember: #e8632a;
+  --ember-dim: #b04010;
+  --star-white: #e8f0ff;
+  --parchment: rgba(20, 12, 4, 0.72);
+  --glass-border: rgba(245, 200, 66, 0.25);
+  --glow-gold: 0 0 8px #f5c842, 0 0 20px #f5c84288;
+  --glow-ember: 0 0 8px #e8632a, 0 0 20px #e8632a66;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--midnight);
+  font-family: 'Cinzel', serif;
+  overflow-x: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/* ── STARFIELD ── */
+#starfield {
+  position: fixed; inset: 0; z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.star {
+  position: absolute;
+  border-radius: 50%;
+  background: #fff;
+  animation: twinkle var(--d, 3s) ease-in-out infinite var(--delay, 0s);
+}
+@keyframes twinkle {
+  0%,100% { opacity: var(--min-op, 0.3); transform: scale(1); }
+  50%      { opacity: 1;                  transform: scale(1.4); }
+}
+
+/* Milky way band */
+#milkyway {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background: radial-gradient(ellipse 60% 30% at 65% 30%,
+    rgba(100,120,200,0.12) 0%, transparent 80%),
+    radial-gradient(ellipse 40% 15% at 30% 60%,
+    rgba(80,100,180,0.08) 0%, transparent 70%);
+}
+
+/* Campfire glow at bottom */
+#campfire-glow {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 1;
+  height: 220px; pointer-events: none;
+  background: radial-gradient(ellipse 70% 100% at 50% 110%,
+    rgba(232,99,42,0.45) 0%,
+    rgba(180,60,10,0.25) 40%,
+    transparent 70%);
+  animation: flicker 2.5s ease-in-out infinite;
+}
+@keyframes flicker {
+  0%,100% { opacity: 1; }
+  33%      { opacity: 0.82; }
+  66%      { opacity: 0.94; }
+}
+
+/* ── DUNK & EGG SILHOUETTE ── */
+#silhouette-wrap {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 2;
+  pointer-events: none;
+  display: flex; justify-content: center; align-items: flex-end;
+  height: 180px;
+}
+#dunk-egg-svg {
+  width: min(680px, 96vw);
+  height: auto;
+  filter: drop-shadow(0 -6px 18px rgba(232,99,42,0.5));
+}
+
+/* ── LAYOUT ── */
+#app {
+  position: relative; z-index: 10;
+  width: min(1200px, 98vw);
+  padding: 24px 16px 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+/* ── TITLE ── */
+#title-section {
+  text-align: center;
+}
+h1 {
+  font-family: 'Cinzel Decorative', 'Cinzel', serif;
+  font-size: clamp(1.8rem, 5vw, 3.2rem);
+  color: var(--pale-gold);
+  text-shadow: var(--glow-gold);
+  letter-spacing: 0.08em;
+  line-height: 1.15;
+}
+h1 span { color: var(--ember); text-shadow: var(--glow-ember); }
+.subtitle {
+  font-size: 0.85rem;
+  color: rgba(200,210,255,0.6);
+  letter-spacing: 0.2em;
+  margin-top: 6px;
+  text-transform: uppercase;
+}
+
+/* ── MAIN PANELS ── */
+#panels {
+  display: flex;
+  gap: 28px;
+  width: 100%;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* parchment glass panel */
+.panel {
+  background: var(--parchment);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 0 30px rgba(245,200,66,0.08), inset 0 1px 0 rgba(245,200,66,0.15);
+  padding: 22px;
+}
+
+/* ── LEFT PANEL ── */
+#left-panel {
+  flex: 0 0 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.panel-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 4px;
+}
+#names-textarea {
+  width: 100%;
+  height: 200px;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  color: var(--star-white);
+  font-family: 'Cinzel', serif;
+  font-size: 0.88rem;
+  padding: 10px 12px;
+  resize: vertical;
+  outline: none;
+  line-height: 1.8;
+  transition: border-color 0.3s;
+}
+#names-textarea::placeholder { color: rgba(200,210,255,0.3); font-style: italic; }
+#names-textarea:focus { border-color: rgba(245,200,66,0.6); box-shadow: 0 0 10px rgba(245,200,66,0.1); }
+
+/* name count */
+#name-count {
+  font-size: 0.72rem;
+  color: rgba(200,210,255,0.5);
+  text-align: right;
+  margin-top: -10px;
+}
+
+/* timer section */
+#timer-section { display: flex; flex-direction: column; gap: 10px; }
+.timer-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.timer-input {
+  width: 72px;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  color: var(--pale-gold);
+  font-family: 'Cinzel', serif;
+  font-size: 1rem;
+  padding: 6px 10px;
+  text-align: center;
+  outline: none;
+}
+.timer-input:focus { border-color: rgba(245,200,66,0.6); }
+.timer-unit-btn {
+  flex: 1;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  color: rgba(200,210,255,0.6);
+  font-family: 'Cinzel', serif;
+  font-size: 0.75rem;
+  padding: 6px 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.05em;
+}
+.timer-unit-btn.active, .timer-unit-btn:hover {
+  background: rgba(245,200,66,0.15);
+  border-color: rgba(245,200,66,0.5);
+  color: var(--pale-gold);
+}
+
+/* countdown display */
+#countdown-display {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(245,200,66,0.2);
+  border-radius: 8px;
+}
+#countdown-display.active { display: flex; }
+#countdown-num {
+  font-size: 1.4rem;
+  color: var(--pale-gold);
+  text-shadow: var(--glow-gold);
+  min-width: 60px;
+  text-align: center;
+  letter-spacing: 0.05em;
+}
+.cd-label { font-size: 0.65rem; color: rgba(200,210,255,0.5); letter-spacing: 0.15em; }
+
+/* spin button */
+#spin-btn {
+  width: 100%;
+  padding: 14px 10px;
+  background: linear-gradient(135deg, #3a1a08 0%, #5c2a10 50%, #3a1a08 100%);
+  border: 2px solid var(--ember);
+  border-radius: 10px;
+  color: var(--pale-gold);
+  font-family: 'Cinzel Decorative', 'Cinzel', serif;
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  text-shadow: 0 0 8px var(--ember);
+  box-shadow: 0 0 15px rgba(232,99,42,0.3), inset 0 1px 0 rgba(255,200,100,0.2);
+  transition: all 0.25s;
+  position: relative;
+  overflow: hidden;
+}
+#spin-btn::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(circle at 50% 0%, rgba(255,200,80,0.15) 0%, transparent 60%);
+  opacity: 0; transition: opacity 0.3s;
+}
+#spin-btn:hover { box-shadow: 0 0 25px rgba(232,99,42,0.6), inset 0 1px 0 rgba(255,200,100,0.3); }
+#spin-btn:hover::before { opacity: 1; }
+#spin-btn:active { transform: scale(0.98); }
+#spin-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ── WHEEL PANEL ── */
+#wheel-panel {
+  flex: 1 1 400px;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+/* timer arc container */
+#timer-arc-wrap {
+  width: 100%;
+  height: 60px;
+  position: relative;
+  display: none;
+}
+#timer-arc-wrap.active { display: block; }
+#timer-arc-canvas {
+  width: 100%; height: 100%;
+}
+
+/* wheel container */
+#wheel-container {
+  position: relative;
+  width: min(420px, 90vw);
+  height: min(420px, 90vw);
+}
+#wheel-canvas {
+  width: 100%; height: 100%;
+  border-radius: 50%;
+  filter: drop-shadow(0 0 20px rgba(100,150,255,0.2));
+}
+/* pointer (north star) */
+#pointer {
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 36px;
+  height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 5;
+  animation: pulse-star 1.6s ease-in-out infinite;
+}
+@keyframes pulse-star {
+  0%,100% { filter: drop-shadow(0 0 6px #fff) drop-shadow(0 0 14px #f5c842); }
+  50%      { filter: drop-shadow(0 0 12px #fff) drop-shadow(0 0 28px #f5c842) drop-shadow(0 0 40px #f5c84266); }
+}
+
+/* ── POPUP ── */
+#overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(2,5,20,0.75);
+  backdrop-filter: blur(4px);
+  align-items: center; justify-content: center;
+}
+#overlay.active { display: flex; }
+#popup {
+  background: linear-gradient(160deg, rgba(15,8,2,0.95) 0%, rgba(25,15,5,0.95) 100%);
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  padding: 36px 40px;
+  max-width: 480px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 0 60px rgba(245,200,66,0.18), 0 0 120px rgba(232,99,42,0.1);
+  position: relative;
+  animation: popup-in 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+@keyframes popup-in {
+  from { opacity: 0; transform: scale(0.7) translateY(30px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.popup-stars {
+  position: absolute; inset: 0; overflow: hidden; border-radius: 18px; pointer-events: none;
+}
+.popup-star {
+  position: absolute; border-radius: 50%; background: #fff;
+  animation: twinkle 1.5s ease-in-out infinite;
+}
+#popup-eyebrow {
+  font-size: 0.65rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(200,210,255,0.5);
+  margin-bottom: 10px;
+}
+#popup-name {
+  font-family: 'Cinzel Decorative', 'Cinzel', serif;
+  font-size: clamp(1.6rem, 6vw, 2.6rem);
+  color: var(--pale-gold);
+  text-shadow: 0 0 10px #f5c842, 0 0 30px #f5c84266;
+  line-height: 1.2;
+  margin-bottom: 20px;
+}
+.constellation-lines {
+  margin: 8px auto 20px;
+  width: 120px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+}
+#popup-quote {
+  font-size: 0.82rem;
+  color: rgba(220,220,240,0.75);
+  font-style: italic;
+  line-height: 1.7;
+  margin-bottom: 28px;
+  padding: 12px 16px;
+  border: 1px solid rgba(245,200,66,0.12);
+  border-radius: 10px;
+  background: rgba(0,0,0,0.25);
+}
+#popup-quote strong { color: var(--ember); font-style: normal; }
+.popup-btns {
+  display: flex; gap: 14px; justify-content: center;
+}
+.popup-btn {
+  flex: 1; max-width: 160px;
+  padding: 11px 16px;
+  border-radius: 9px;
+  font-family: 'Cinzel', serif;
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+#btn-close {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: rgba(220,220,255,0.8);
+}
+#btn-close:hover { background: rgba(255,255,255,0.1); color: #fff; }
+#btn-remove {
+  background: rgba(232,99,42,0.15);
+  border: 1px solid rgba(232,99,42,0.4);
+  color: var(--ember);
+}
+#btn-remove:hover { background: rgba(232,99,42,0.3); box-shadow: 0 0 12px rgba(232,99,42,0.3); }
+
+/* responsive */
+@media (max-width: 680px) {
+  #panels { flex-direction: column; align-items: center; }
+  #left-panel { flex: none; width: 100%; max-width: 400px; }
+  #wheel-panel { max-width: 400px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Starfield -->
+<div id="starfield"></div>
+<div id="milkyway"></div>
+<div id="campfire-glow"></div>
+
+<!-- Dunk & Egg SVG Silhouette -->
+<div id="silhouette-wrap">
+  <svg id="dunk-egg-svg" viewBox="0 0 680 180" xmlns="http://www.w3.org/2000/svg">
+    <!-- Ground / bedrolls -->
+    <ellipse cx="340" cy="175" rx="330" ry="14" fill="rgba(30,12,2,0.7)"/>
+    <!-- Campfire coals glow -->
+    <ellipse cx="340" cy="168" rx="22" ry="6" fill="rgba(232,99,42,0.5)"/>
+    <ellipse cx="340" cy="166" rx="14" ry="4" fill="rgba(255,160,50,0.6)"/>
+
+    <!-- DUNK (tall, lying on left, head right) -->
+    <!-- Body/bedroll -->
+    <path d="M90,158 Q110,145 200,148 Q230,150 255,152 Q260,154 255,160 Q230,162 200,162 Q110,165 90,168 Z"
+          fill="rgba(40,25,10,0.85)"/>
+    <!-- Arm -->
+    <path d="M255,150 Q268,142 275,138" stroke="rgba(60,35,15,0.9)" stroke-width="8" stroke-linecap="round" fill="none"/>
+    <!-- Head (Dunk - large, looking up) -->
+    <ellipse cx="275" cy="132" rx="18" ry="20" fill="rgba(55,30,10,0.92)"/>
+    <!-- Nose profile -->
+    <path d="M275,126 Q283,132 280,138" stroke="rgba(80,45,15,0.7)" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <!-- Eye reflecting stars -->
+    <circle cx="280" cy="128" r="2.5" fill="rgba(245,200,66,0.7)"/>
+    <!-- Cloak/blanket texture -->
+    <path d="M105,158 Q130,154 170,155 Q200,156 230,157" stroke="rgba(70,40,15,0.4)" stroke-width="1.5" fill="none"/>
+    <path d="M110,162 Q140,159 180,160 Q215,161 240,161" stroke="rgba(70,40,15,0.4)" stroke-width="1" fill="none"/>
+
+    <!-- EGG (smaller, lying on right, head left) -->
+    <!-- Body/bedroll -->
+    <path d="M395,154 Q430,148 520,150 Q560,152 590,155 Q595,158 590,164 Q560,166 520,164 Q430,166 395,164 Z"
+          fill="rgba(35,20,8,0.85)"/>
+    <!-- Arm pointing up -->
+    <path d="M400,153 Q390,145 385,138 Q383,132 386,128" stroke="rgba(60,35,15,0.9)" stroke-width="7" stroke-linecap="round" fill="none"/>
+    <!-- Hand/finger pointing -->
+    <path d="M386,128 Q384,120 383,114" stroke="rgba(70,40,15,0.85)" stroke-width="5" stroke-linecap="round" fill="none"/>
+    <!-- Head (Egg - smaller, shaved, looking up-left) -->
+    <ellipse cx="400" cy="144" rx="14" ry="16" fill="rgba(55,30,10,0.92)"/>
+    <!-- Shaved head highlight -->
+    <path d="M393,138 Q400,134 407,138" stroke="rgba(90,55,20,0.5)" stroke-width="1.5" fill="none"/>
+    <!-- Eye reflecting stars -->
+    <circle cx="395" cy="142" r="2" fill="rgba(245,200,66,0.65)"/>
+    <!-- Egg's cloak -->
+    <path d="M410,154 Q445,150 490,151 Q530,152 560,153" stroke="rgba(70,40,15,0.4)" stroke-width="1.5" fill="none"/>
+
+    <!-- Speech bubble (dynamic, set by JS) -->
+    <g id="speech-bubble" opacity="0">
+      <rect id="sb-bg" x="180" y="60" width="320" height="60" rx="12" ry="12"
+            fill="rgba(8,5,2,0.88)" stroke="rgba(245,200,66,0.35)" stroke-width="1.2"/>
+      <polygon id="sb-tail" points="310,120 295,135 325,120" fill="rgba(8,5,2,0.88)"/>
+      <text id="sb-text" x="340" y="84" text-anchor="middle" fill="rgba(220,210,180,0.9)"
+            font-family="Cinzel, serif" font-size="11" font-style="italic">
+        <tspan x="340" dy="0" id="sb-line1"></tspan>
+        <tspan x="340" dy="16" id="sb-line2"></tspan>
+        <tspan x="340" dy="16" id="sb-line3"></tspan>
+      </text>
+    </g>
+  </svg>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div id="title-section">
+    <h1>Wheel of <span>Fate</span></h1>
+    <p class="subtitle">The Stars Shall Decide &mdash; By the Old Gods and the New</p>
+  </div>
+
+  <div id="panels">
+    <!-- LEFT: Input -->
+    <div class="panel" id="left-panel">
+      <div class="panel-label">Enter Names &mdash; One Per Line</div>
+      <textarea id="names-textarea" placeholder="Dunk&#10;Egg&#10;Baelor&#10;Rohanne&#10;Aerys&#10;Naomi..."></textarea>
+      <div id="name-count">0 names</div>
+
+      <div id="timer-section">
+        <div class="panel-label">Fate Timer (optional)</div>
+        <div class="timer-row">
+          <input type="number" id="timer-value" class="timer-input" min="0" max="3600" value="0" placeholder="0"/>
+          <button class="timer-unit-btn active" id="btn-sec" onclick="setUnit('seconds')">Seconds</button>
+          <button class="timer-unit-btn" id="btn-min" onclick="setUnit('minutes')">Minutes</button>
+        </div>
+        <div id="countdown-display">
+          <div>
+            <div class="cd-label">Time Remaining</div>
+            <div id="countdown-num">0:00</div>
+          </div>
+        </div>
+      </div>
+
+      <button id="spin-btn" onclick="spinWheel()">
+        ✦ Choose Your Fate ✦
+      </button>
+    </div>
+
+    <!-- RIGHT: Wheel -->
+    <div id="wheel-panel">
+      <div id="timer-arc-wrap">
+        <canvas id="timer-arc-canvas"></canvas>
+      </div>
+      <div id="wheel-container">
+        <div id="pointer">
+          <svg width="36" height="36" viewBox="0 0 36 36">
+            <!-- North Star / 8-point star -->
+            <g transform="translate(18,18)">
+              <path d="M0,-14 L2,-2 L14,0 L2,2 L0,14 L-2,2 L-14,0 L-2,-2 Z" fill="#fff" opacity="0.95"/>
+              <path d="M0,-10 L1,-1 L10,0 L1,1 L0,10 L-1,1 L-10,0 L-1,-1 Z" fill="#f5c842"/>
+              <circle r="3" fill="#fff"/>
+            </g>
+          </svg>
+        </div>
+        <canvas id="wheel-canvas"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Result Popup -->
+<div id="overlay" onclick="overlayClick(event)">
+  <div id="popup">
+    <div class="popup-stars" id="popup-stars"></div>
+    <div id="popup-eyebrow">✦ &nbsp; The Stars Have Spoken &nbsp; ✦</div>
+    <div id="popup-name">—</div>
+    <div class="constellation-lines">
+      <canvas id="const-canvas" width="120" height="40"></canvas>
+    </div>
+    <div id="popup-quote"></div>
+    <div class="popup-btns">
+      <button class="popup-btn" id="btn-close" onclick="closePopup()">Close</button>
+      <button class="popup-btn" id="btn-remove" onclick="removeName()">Remove Name</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+//  STARFIELD GENERATION
+// ─────────────────────────────────────────────
+(function generateStars() {
+  const sf = document.getElementById('starfield');
+  for (let i = 0; i < 280; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const size = Math.random() < 0.05 ? (2.5 + Math.random() * 1.5)
+               : Math.random() < 0.25 ? (1.2 + Math.random() * 1.2)
+               :                         (0.4 + Math.random() * 0.9);
+    const x = Math.random() * 100, y = Math.random() * 80;
+    const dur = 2 + Math.random() * 4;
+    const delay = -(Math.random() * 5);
+    const minOp = 0.2 + Math.random() * 0.4;
+    s.style.cssText = `width:${size}px;height:${size}px;left:${x}%;top:${y}%;
+      --d:${dur}s;--delay:${delay}s;--min-op:${minOp};opacity:${minOp}`;
+    sf.appendChild(s);
+  }
+})();
+
+// ─────────────────────────────────────────────
+//  STATE
+// ─────────────────────────────────────────────
+let names        = [];
+let spinning     = false;
+let spinAngle    = 0;    // current rotation in radians
+let velocity     = 0;
+let animFrame    = null;
+let selectedName = '';
+let timerUnit    = 'seconds';
+let cdInterval   = null;
+let cdRemaining  = 0;
+
+// ─────────────────────────────────────────────
+//  CANVAS SETUP
+// ─────────────────────────────────────────────
+const wheelCanvas = document.getElementById('wheel-canvas');
+const wctx        = wheelCanvas.getContext('2d');
+const arcCanvas   = document.getElementById('timer-arc-canvas');
+const actx        = arcCanvas.getContext('2d');
+const constCanvas = document.getElementById('const-canvas');
+const cctx        = constCanvas.getContext('2d');
+
+function resizeCanvases() {
+  const container = document.getElementById('wheel-container');
+  const sz = container.offsetWidth;
+  wheelCanvas.width  = sz;
+  wheelCanvas.height = sz;
+  arcCanvas.width    = document.getElementById('timer-arc-wrap').offsetWidth;
+  arcCanvas.height   = 60;
+  drawWheel();
+}
+
+// ─────────────────────────────────────────────
+//  NAME INPUT
+// ─────────────────────────────────────────────
+const textarea  = document.getElementById('names-textarea');
+const nameCount = document.getElementById('name-count');
+
+function getNames() {
+  return textarea.value.split('\n')
+    .map(n => n.trim()).filter(n => n.length > 0);
+}
+
+textarea.addEventListener('input', () => {
+  names = getNames();
+  nameCount.textContent = names.length + ' name' + (names.length !== 1 ? 's' : '');
+  drawWheel();
+});
+
+// ─────────────────────────────────────────────
+//  WHEEL DRAWING
+// ─────────────────────────────────────────────
+const SLICE_COLORS = [
+  'rgba(15,25,70,0.75)', 'rgba(10,20,60,0.75)', 'rgba(18,28,80,0.75)',
+  'rgba(12,22,65,0.75)', 'rgba(20,30,85,0.75)', 'rgba(8,18,55,0.75)',
+];
+const LINE_COLORS = [
+  'rgba(100,160,255,0.35)', 'rgba(150,200,255,0.3)', 'rgba(120,180,255,0.28)',
+  'rgba(180,220,255,0.32)', 'rgba(80,140,220,0.35)', 'rgba(140,190,255,0.3)',
+];
+
+function drawWheel() {
+  const sz = wheelCanvas.width;
+  const cx = sz / 2, cy = sz / 2;
+  const R  = sz / 2 - 4;
+  wctx.clearRect(0, 0, sz, sz);
+
+  if (names.length === 0) {
+    // Empty state
+    wctx.beginPath();
+    wctx.arc(cx, cy, R, 0, Math.PI * 2);
+    wctx.fillStyle = 'rgba(5,10,35,0.85)';
+    wctx.fill();
+    wctx.strokeStyle = 'rgba(100,150,255,0.25)';
+    wctx.lineWidth = 2;
+    wctx.stroke();
+    // Placeholder text
+    wctx.font = `${sz * 0.06}px Cinzel, serif`;
+    wctx.fillStyle = 'rgba(100,140,255,0.4)';
+    wctx.textAlign = 'center';
+    wctx.textBaseline = 'middle';
+    wctx.fillText('Add names to', cx, cy - sz * 0.06);
+    wctx.fillText('see the stars', cx, cy + sz * 0.06);
+    return;
+  }
+
+  const n = names.length;
+  const slice = (Math.PI * 2) / n;
+
+  // Outer glow
+  const outerGlow = wctx.createRadialGradient(cx, cy, R * 0.85, cx, cy, R + 6);
+  outerGlow.addColorStop(0, 'transparent');
+  outerGlow.addColorStop(1, 'rgba(100,150,255,0.18)');
+  wctx.beginPath();
+  wctx.arc(cx, cy, R + 6, 0, Math.PI * 2);
+  wctx.fillStyle = outerGlow;
+  wctx.fill();
+
+  // Slices
+  for (let i = 0; i < n; i++) {
+    const startAngle = spinAngle + i * slice - Math.PI / 2;
+    const endAngle   = startAngle + slice;
+    const mid        = startAngle + slice / 2;
+
+    // Slice fill
+    wctx.beginPath();
+    wctx.moveTo(cx, cy);
+    wctx.arc(cx, cy, R, startAngle, endAngle);
+    wctx.closePath();
+    wctx.fillStyle = SLICE_COLORS[i % SLICE_COLORS.length];
+    wctx.fill();
+
+    // Constellation divider line
+    wctx.beginPath();
+    wctx.moveTo(cx, cy);
+    wctx.lineTo(cx + R * Math.cos(startAngle), cy + R * Math.sin(startAngle));
+    wctx.strokeStyle = LINE_COLORS[i % LINE_COLORS.length];
+    wctx.lineWidth = 1.2;
+    wctx.setLineDash([4, 6]);
+    wctx.stroke();
+    wctx.setLineDash([]);
+
+    // Small star dots along divider
+    for (let d = 0.3; d <= 0.85; d += 0.2) {
+      const sx = cx + R * d * Math.cos(startAngle);
+      const sy = cy + R * d * Math.sin(startAngle);
+      const starSize = 1.2 + Math.random() * 0.8;
+      wctx.beginPath();
+      wctx.arc(sx, sy, starSize, 0, Math.PI * 2);
+      wctx.fillStyle = 'rgba(180,210,255,0.55)';
+      wctx.fill();
+    }
+
+    // Name text
+    wctx.save();
+    wctx.translate(cx, cy);
+    wctx.rotate(mid);
+    const textRadius = R * 0.62;
+    const fontSize = Math.max(10, Math.min(18, (R * 0.18) / Math.max(1, names[i].length * 0.4)));
+    wctx.font = `${fontSize}px Cinzel, serif`;
+    wctx.textAlign = 'center';
+    wctx.textBaseline = 'middle';
+
+    // Glow
+    wctx.shadowColor = 'rgba(245,200,66,0.9)';
+    wctx.shadowBlur  = 10;
+    wctx.fillStyle   = '#fde87a';
+    wctx.fillText(names[i], textRadius, 0);
+    wctx.shadowBlur  = 0;
+    wctx.restore();
+  }
+
+  // Outer ring
+  wctx.beginPath();
+  wctx.arc(cx, cy, R, 0, Math.PI * 2);
+  wctx.strokeStyle = 'rgba(100,160,255,0.35)';
+  wctx.lineWidth = 2;
+  wctx.stroke();
+
+  // Star dots scattered inside
+  drawWheelStars(cx, cy, R);
+
+  // Center hub
+  const hubGrad = wctx.createRadialGradient(cx, cy, 0, cx, cy, sz * 0.08);
+  hubGrad.addColorStop(0, 'rgba(245,200,66,0.8)');
+  hubGrad.addColorStop(0.4, 'rgba(180,140,30,0.6)');
+  hubGrad.addColorStop(1, 'rgba(20,10,3,0.9)');
+  wctx.beginPath();
+  wctx.arc(cx, cy, sz * 0.06, 0, Math.PI * 2);
+  wctx.fillStyle = hubGrad;
+  wctx.fill();
+  wctx.strokeStyle = 'rgba(245,200,66,0.5)';
+  wctx.lineWidth = 1.5;
+  wctx.stroke();
+}
+
+// Stable star positions per name set
+let starCache = [];
+function updateStarCache() {
+  starCache = [];
+  for (let i = 0; i < 60; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const r     = Math.random();
+    starCache.push({ a: angle, r, s: 0.5 + Math.random() * 1.5, o: 0.15 + Math.random() * 0.35 });
+  }
+}
+updateStarCache();
+textarea.addEventListener('input', updateStarCache);
+
+function drawWheelStars(cx, cy, R) {
+  starCache.forEach(({ a, r, s, o }) => {
+    const rr = r * R * 0.9;
+    const sx = cx + rr * Math.cos(a + spinAngle * 0.3);
+    const sy = cy + rr * Math.sin(a + spinAngle * 0.3);
+    wctx.beginPath();
+    wctx.arc(sx, sy, s, 0, Math.PI * 2);
+    wctx.fillStyle = `rgba(200,220,255,${o})`;
+    wctx.fill();
+  });
+}
+
+// ─────────────────────────────────────────────
+//  SPINNING LOGIC
+// ─────────────────────────────────────────────
+function spinWheel() {
+  if (names.length < 2) {
+    alert('Please enter at least 2 names to spin the wheel.');
+    return;
+  }
+
+  // Reset timer
+  stopCountdown();
+
+  if (animFrame) cancelAnimationFrame(animFrame);
+  spinning = true;
+  document.getElementById('spin-btn').disabled = true;
+
+  // Initial burst of speed (5-7 full rotations worth)
+  velocity = (8 + Math.random() * 4) * (Math.PI / 60); // rad per frame at 60fps
+  const decelStart = Date.now() + 3500;
+  const totalTime   = 5000; // ms
+
+  function frame() {
+    const now = Date.now();
+    const elapsed = now - (decelStart - 3500);
+
+    if (elapsed < 3500) {
+      // Full speed
+      spinAngle += velocity;
+    } else {
+      // Decelerate
+      const progress = (elapsed - 3500) / 1500;
+      const ease     = 1 - Math.pow(1 - Math.min(progress, 1), 3);
+      spinAngle += velocity * (1 - ease);
+    }
+
+    if (elapsed >= totalTime) {
+      spinning = false;
+      snapToName();
+      document.getElementById('spin-btn').disabled = false;
+      return;
+    }
+
+    drawWheel();
+    animFrame = requestAnimationFrame(frame);
+  }
+  animFrame = requestAnimationFrame(frame);
+}
+
+function snapToName() {
+  const n = names.length;
+  if (n === 0) return;
+  const slice = (Math.PI * 2) / n;
+
+  // Pointer is at top (−π/2). We need to find which slice is at the top.
+  // A slice i covers [spinAngle + i*slice − π/2, spinAngle + (i+1)*slice − π/2]
+  // The top is at angle 0 in screen coords (−π/2 + spinAngle offset).
+  // Normalize spinAngle
+  const norm = ((spinAngle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+  // The "top" in wheel coordinates is at angle = −spinAngle + π/2
+  const topAngle = (((-spinAngle + Math.PI / 2) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+  const idx = Math.floor(topAngle / slice) % n;
+
+  selectedName = names[idx];
+
+  // Snap so selected slice is perfectly centered at top
+  const targetMid = idx * slice + slice / 2;
+  const targetAngle = Math.PI / 2 - targetMid;
+  spinAngle = ((targetAngle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+
+  drawWheel();
+  showPopup(selectedName);
+}
+
+// ─────────────────────────────────────────────
+//  POPUP
+// ─────────────────────────────────────────────
+const quotes = [
+  ['"{name} is the one chosen by the stars, Egg."', '"Even Dunk the Lunk can see it."'],
+  ['"The stars have spoken — clear as a maester\'s chain."', '"It\'s {name}\'s turn, lad."'],
+  ['"A hedge knight\'s fate is simple, Egg."', '"Tonight the stars say {name}."'],
+  ['"Dunk the Lunk, thick as a castle wall..."', '"...even he sees {name}\'s destiny up there."'],
+  ['"Look there, ser — do you see that cluster?"', '"The stars name {name}. So it is written."'],
+  ['"By the Seven, the Old Gods, and the Lord of Light..."', '"...{name} cannot escape their fate."'],
+  ['"Egg... I had the strangest dream."', '"The stars called {name}\'s name all night."'],
+];
+
+function showPopup(name) {
+  document.getElementById('popup-name').textContent = name;
+  const q = quotes[Math.floor(Math.random() * quotes.length)];
+  const fmt = (s) => s.replace(/{name}/g, name);
+  document.getElementById('popup-quote').innerHTML =
+    `<em>${fmt(q[0])}<br><strong>${fmt(q[1])}</strong></em>`;
+
+  // Popup stars
+  const ps = document.getElementById('popup-stars');
+  ps.innerHTML = '';
+  for (let i = 0; i < 30; i++) {
+    const s = document.createElement('div');
+    s.className = 'popup-star';
+    const size = 0.8 + Math.random() * 2;
+    s.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}%;
+      top:${Math.random()*100}%;--d:${1+Math.random()*2}s;--delay:${-Math.random()*2}s;--min-op:0.2`;
+    ps.appendChild(s);
+  }
+
+  drawConstellation(name);
+  document.getElementById('overlay').classList.add('active');
+  showSpeechBubble(name, q);
+
+  // Start timer
+  const tv = parseInt(document.getElementById('timer-value').value) || 0;
+  if (tv > 0) {
+    const secs = timerUnit === 'minutes' ? tv * 60 : tv;
+    startCountdown(secs);
+  }
+}
+
+function drawConstellation(name) {
+  const w = 120, h = 40;
+  cctx.clearRect(0, 0, w, h);
+  // Generate deterministic star positions from name
+  const pts = [];
+  for (let i = 0; i < 6; i++) {
+    const seed = name.charCodeAt(i % name.length) * (i + 1);
+    pts.push({ x: 8 + (seed % 104), y: 4 + ((seed * 7) % 32) });
+  }
+  // Lines
+  cctx.strokeStyle = 'rgba(245,200,66,0.55)';
+  cctx.lineWidth = 1;
+  cctx.setLineDash([3, 4]);
+  for (let i = 0; i < pts.length - 1; i++) {
+    cctx.beginPath();
+    cctx.moveTo(pts[i].x, pts[i].y);
+    cctx.lineTo(pts[i+1].x, pts[i+1].y);
+    cctx.stroke();
+  }
+  cctx.setLineDash([]);
+  // Stars
+  pts.forEach(p => {
+    cctx.beginPath();
+    cctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2);
+    cctx.fillStyle = 'rgba(253,232,122,0.9)';
+    cctx.shadowColor = '#f5c842';
+    cctx.shadowBlur  = 8;
+    cctx.fill();
+    cctx.shadowBlur  = 0;
+  });
+}
+
+function showSpeechBubble(name, q) {
+  const fmt = (s) => s.replace(/{name}/g, name).replace(/"/g, '');
+  const combined = fmt(q[0]) + ' ' + fmt(q[1]);
+  // Split into up to 3 lines of ~36 chars
+  const words = combined.split(' ');
+  const lines = ['', '', ''];
+  let li = 0;
+  words.forEach(w => {
+    if ((lines[li] + ' ' + w).trim().length > 36 && li < 2) li++;
+    lines[li] = (lines[li] + ' ' + w).trim();
+  });
+
+  document.getElementById('sb-line1').textContent = lines[0];
+  document.getElementById('sb-line2').textContent = lines[1];
+  document.getElementById('sb-line3').textContent = lines[2];
+
+  const bubble = document.getElementById('speech-bubble');
+  bubble.style.opacity = '0';
+  bubble.style.transition = 'opacity 0.8s';
+  setTimeout(() => { bubble.style.opacity = '1'; }, 200);
+}
+
+function closePopup() {
+  document.getElementById('overlay').classList.remove('active');
+  hideSpeechBubble();
+}
+
+function hideSpeechBubble() {
+  const b = document.getElementById('speech-bubble');
+  b.style.opacity = '0';
+}
+
+function overlayClick(e) {
+  if (e.target === document.getElementById('overlay')) closePopup();
+}
+
+function removeName() {
+  const idx = names.indexOf(selectedName);
+  if (idx !== -1) {
+    names.splice(idx, 1);
+    // Remove first occurrence from textarea
+    const lines = textarea.value.split('\n');
+    const li    = lines.findIndex(l => l.trim() === selectedName);
+    if (li !== -1) lines.splice(li, 1);
+    textarea.value = lines.join('\n');
+    nameCount.textContent = names.length + ' name' + (names.length !== 1 ? 's' : '');
+    updateStarCache();
+    drawWheel();
+  }
+  closePopup();
+}
+
+// ─────────────────────────────────────────────
+//  TIMER
+// ─────────────────────────────────────────────
+function setUnit(unit) {
+  timerUnit = unit;
+  document.getElementById('btn-sec').classList.toggle('active', unit === 'seconds');
+  document.getElementById('btn-min').classList.toggle('active', unit === 'minutes');
+}
+
+function startCountdown(seconds) {
+  stopCountdown();
+  cdRemaining = seconds;
+  const total = seconds;
+  document.getElementById('countdown-display').classList.add('active');
+  document.getElementById('timer-arc-wrap').classList.add('active');
+  resizeCanvases();
+  updateCountdownDisplay();
+  drawTimerArc(cdRemaining / total, cdRemaining);
+
+  cdInterval = setInterval(() => {
+    cdRemaining--;
+    updateCountdownDisplay();
+    drawTimerArc(cdRemaining / total, cdRemaining);
+    if (cdRemaining <= 0) stopCountdown();
+  }, 1000);
+}
+
+function stopCountdown() {
+  if (cdInterval) { clearInterval(cdInterval); cdInterval = null; }
+  cdRemaining = 0;
+  document.getElementById('countdown-display').classList.remove('active');
+  document.getElementById('timer-arc-wrap').classList.remove('active');
+  actx.clearRect(0, 0, arcCanvas.width, arcCanvas.height);
+}
+
+function updateCountdownDisplay() {
+  const m = Math.floor(cdRemaining / 60);
+  const s = cdRemaining % 60;
+  document.getElementById('countdown-num').textContent = m + ':' + String(s).padStart(2, '0');
+}
+
+// Shooting star arc animation
+let shootingStarPos = 0;
+let ssAnimFrame = null;
+
+function drawTimerArc(fraction, remaining) {
+  const w = arcCanvas.width, h = arcCanvas.height;
+  actx.clearRect(0, 0, w, h);
+
+  const cx = w / 2, cy = h + 10;
+  const r  = Math.min(w * 0.46, 120);
+  const startA = Math.PI + 0.15;
+  const endA   = Math.PI * 2 - 0.15;
+  const range  = endA - startA;
+
+  // Track arc (dim)
+  actx.beginPath();
+  actx.arc(cx, cy, r, startA, endA);
+  actx.strokeStyle = 'rgba(100,150,255,0.18)';
+  actx.lineWidth = 3;
+  actx.stroke();
+
+  // Progress arc
+  const progEnd = startA + range * (1 - fraction);
+  actx.beginPath();
+  actx.arc(cx, cy, r, startA, progEnd);
+  actx.strokeStyle = 'rgba(245,200,66,0.55)';
+  actx.lineWidth = 2.5;
+  actx.stroke();
+
+  // Shooting star at current position
+  const ssAngle = startA + range * (1 - fraction);
+  const sx = cx + r * Math.cos(ssAngle);
+  const sy = cy + r * Math.sin(ssAngle);
+
+  // Tail (gradient behind)
+  const tailLen = 0.18;
+  const tailStart = ssAngle - tailLen;
+  for (let t = 0; t < 10; t++) {
+    const ta = tailStart + (tailLen * t / 10);
+    const tx = cx + r * Math.cos(ta);
+    const ty = cy + r * Math.sin(ta);
+    actx.beginPath();
+    actx.arc(tx, ty, 1.5 * (t / 10), 0, Math.PI * 2);
+    actx.fillStyle = `rgba(245,200,66,${0.05 + 0.3 * (t / 10)})`;
+    actx.fill();
+  }
+
+  // Star head
+  actx.beginPath();
+  actx.arc(sx, sy, 4, 0, Math.PI * 2);
+  actx.fillStyle = '#fff';
+  actx.shadowColor = '#f5c842';
+  actx.shadowBlur  = 12;
+  actx.fill();
+  actx.shadowBlur  = 0;
+
+  // Time label in center-ish
+  const mins = Math.floor(remaining / 60);
+  const secs = remaining % 60;
+  const label = mins + ':' + String(secs).padStart(2, '0');
+  actx.font = 'bold 14px Cinzel, serif';
+  actx.fillStyle = 'rgba(253,232,122,0.85)';
+  actx.textAlign = 'center';
+  actx.shadowColor = '#f5c842';
+  actx.shadowBlur  = 8;
+  actx.fillText(label, cx, h - 8);
+  actx.shadowBlur  = 0;
+}
+
+// ─────────────────────────────────────────────
+//  INIT
+// ─────────────────────────────────────────────
+window.addEventListener('resize', resizeCanvases);
+resizeCanvases();
+
+// Init with sample names
+textarea.value = 'Dunk\nEgg\nBaelor\nRohanne\nAerys';
+names = getNames();
+nameCount.textContent = names.length + ' names';
+updateStarCache();
+drawWheel();
+</script>
+</body>
+</html>
