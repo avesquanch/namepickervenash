@@ -284,7 +284,7 @@ h1 span { color: var(--ember); text-shadow: var(--glow-ember); }
 /* timer arc container */
 #timer-arc-wrap {
   width: 100%;
-  height: 52px;
+  height: 100px;
   position: relative;
   display: none;
 }
@@ -636,6 +636,9 @@ let selectedName = '';
 let timerUnit    = 'seconds';
 let cdInterval   = null;
 let cdRemaining  = 0;
+let cdRafId      = null;
+let cdStartTime  = 0;
+let cdTotalMs    = 0;
 
 // ─────────────────────────────────────────────
 //  CANVAS SETUP
@@ -653,7 +656,7 @@ function resizeCanvases() {
   wheelCanvas.width  = sz;
   wheelCanvas.height = sz;
   arcCanvas.width    = document.getElementById('timer-arc-wrap').offsetWidth;
-  arcCanvas.height   = 52;
+  arcCanvas.height   = 100;
   drawWheel();
 }
 
@@ -1039,24 +1042,36 @@ function setUnit(unit) {
 
 function startCountdown(seconds) {
   stopCountdown();
+  cdTotalMs   = seconds * 1000;
+  cdStartTime = Date.now();
   cdRemaining = seconds;
-  const total = seconds;
   document.getElementById('countdown-display').classList.add('active');
   document.getElementById('timer-arc-wrap').classList.add('active');
   resizeCanvases();
   updateCountdownDisplay();
-  drawTimerArc(cdRemaining / total, cdRemaining);
 
+  // Update the digital display every 250 ms (accurate tick)
   cdInterval = setInterval(() => {
-    cdRemaining--;
+    const elapsed = Date.now() - cdStartTime;
+    cdRemaining = Math.max(0, Math.ceil((cdTotalMs - elapsed) / 1000));
     updateCountdownDisplay();
-    drawTimerArc(cdRemaining / total, cdRemaining);
     if (cdRemaining <= 0) stopCountdown();
-  }, 1000);
+  }, 250);
+
+  // Animate the arc smoothly every frame with rAF
+  function arcFrame() {
+    const elapsed  = Date.now() - cdStartTime;
+    const fraction = Math.max(0, 1 - elapsed / cdTotalMs);
+    const dispSecs = Math.max(0, Math.ceil((cdTotalMs - elapsed) / 1000));
+    drawTimerArc(fraction, dispSecs);
+    if (fraction > 0) cdRafId = requestAnimationFrame(arcFrame);
+  }
+  cdRafId = requestAnimationFrame(arcFrame);
 }
 
 function stopCountdown() {
   if (cdInterval) { clearInterval(cdInterval); cdInterval = null; }
+  if (cdRafId)    { cancelAnimationFrame(cdRafId); cdRafId = null; }
   cdRemaining = 0;
   document.getElementById('countdown-display').classList.remove('active');
   document.getElementById('timer-arc-wrap').classList.remove('active');
@@ -1069,79 +1084,101 @@ function updateCountdownDisplay() {
   document.getElementById('countdown-num').textContent = m + ':' + String(s).padStart(2, '0');
 }
 
-// Horizontal shooting star timer
+// Elliptical arc shooting-star timer.
+// The arc is the top half of an ellipse anchored at the bottom of the canvas,
+// so it is always fully visible — no clipping.
 function drawTimerArc(fraction, remaining) {
   const w = arcCanvas.width, h = arcCanvas.height;
   actx.clearRect(0, 0, w, h);
 
-  const pad   = 18;
-  const trackY = Math.round(h * 0.42);  // upper portion; label sits below
-  const trackW = w - pad * 2;
+  const pad = 14;
+  // Ellipse semi-axes: rx fills the canvas width, ry fills the height
+  const rx  = w / 2 - pad;   // horizontal radius
+  const ry  = h - 14;        // vertical radius  (arc top sits 14 px from canvas top)
+  const cx  = w / 2;
+  const cy  = h;              // centre below canvas — only the top half is visible
 
-  // Star travels left→right as time runs out (fraction 1→0)
-  const starX = pad + (1 - fraction) * trackW;
+  // Map angle a (π → 2π) to a canvas point on the ellipse
+  const pt = a => ({
+    x: cx + rx * Math.cos(a),
+    y: cy + ry * Math.sin(a)   // sin is negative in this range → curves upward
+  });
 
-  // Dim full track
+  const startA = Math.PI;       // left end
+  const endA   = Math.PI * 2;   // right end
+
+  // ── Full dim track ──
+  actx.save();
+  actx.translate(cx, cy);
+  actx.scale(rx / ry, 1);       // stretch circle → ellipse
   actx.beginPath();
-  actx.moveTo(pad, trackY);
-  actx.lineTo(pad + trackW, trackY);
-  actx.strokeStyle = 'rgba(100,150,255,0.18)';
-  actx.lineWidth = 2;
-  actx.setLineDash([5, 9]);
+  actx.arc(0, 0, ry, startA, endA);
+  actx.restore();
+  actx.strokeStyle = 'rgba(100,150,255,0.2)';
+  actx.lineWidth   = 2;
+  actx.setLineDash([6, 10]);
   actx.stroke();
   actx.setLineDash([]);
 
-  // Glowing consumed section (left of star)
+  // Star travels left (π, fraction=1) → right (2π, fraction=0)
+  const starA  = startA + (1 - fraction) * Math.PI;
+  const starPt = pt(starA);
+
+  // ── Consumed arc (gold glow) ──
+  actx.save();
+  actx.translate(cx, cy);
+  actx.scale(rx / ry, 1);
   actx.beginPath();
-  actx.moveTo(pad, trackY);
-  actx.lineTo(starX, trackY);
-  actx.strokeStyle = 'rgba(245,200,66,0.3)';
-  actx.lineWidth = 2;
+  actx.arc(0, 0, ry, startA, starA);
+  actx.restore();
+  actx.strokeStyle = 'rgba(245,200,66,0.35)';
+  actx.lineWidth   = 2;
   actx.stroke();
 
-  // Comet tail (linear gradient behind star)
-  const tailLen = Math.min(60, starX - pad);
-  if (tailLen > 0) {
-    const tailGrad = actx.createLinearGradient(starX - tailLen, trackY, starX, trackY);
-    tailGrad.addColorStop(0, 'transparent');
-    tailGrad.addColorStop(1, 'rgba(245,200,66,0.55)');
-    actx.beginPath();
-    actx.moveTo(starX - tailLen, trackY);
-    actx.lineTo(starX, trackY);
-    actx.strokeStyle = tailGrad;
-    actx.lineWidth = 3;
-    actx.stroke();
-  }
-
-  // Star head
+  // ── Comet tail (bright arc just behind the star) ──
+  const tailA = Math.max(startA, starA - 0.28);
+  actx.save();
+  actx.translate(cx, cy);
+  actx.scale(rx / ry, 1);
   actx.beginPath();
-  actx.arc(starX, trackY, 5, 0, Math.PI * 2);
-  actx.fillStyle = '#ffffff';
+  actx.arc(0, 0, ry, tailA, starA);
+  actx.restore();
+  actx.strokeStyle = 'rgba(245,200,66,0.75)';
+  actx.lineWidth   = 4;
+  actx.lineCap     = 'round';
+  actx.stroke();
+  actx.lineCap     = 'butt';
+
+  // ── Star head ──
+  actx.beginPath();
+  actx.arc(starPt.x, starPt.y, 5, 0, Math.PI * 2);
+  actx.fillStyle   = '#ffffff';
   actx.shadowColor = '#f5c842';
-  actx.shadowBlur  = 14;
+  actx.shadowBlur  = 16;
   actx.fill();
   actx.shadowBlur  = 0;
 
   // 4-point spikes
-  [0, Math.PI / 2, Math.PI, 3 * Math.PI / 2].forEach(a => {
+  for (let i = 0; i < 4; i++) {
+    const a = i * Math.PI / 2;
     actx.beginPath();
-    actx.moveTo(starX + Math.cos(a) * 4, trackY + Math.sin(a) * 4);
-    actx.lineTo(starX + Math.cos(a) * 10, trackY + Math.sin(a) * 10);
-    actx.strokeStyle = 'rgba(253,232,122,0.55)';
-    actx.lineWidth = 1.5;
+    actx.moveTo(starPt.x + Math.cos(a) * 4, starPt.y + Math.sin(a) * 4);
+    actx.lineTo(starPt.x + Math.cos(a) * 10, starPt.y + Math.sin(a) * 10);
+    actx.strokeStyle = 'rgba(253,232,122,0.6)';
+    actx.lineWidth   = 1.5;
     actx.stroke();
-  });
+  }
 
-  // Time label centred below track
+  // ── Time label at the apex of the arc ──
+  const apex = pt(Math.PI * 1.5);  // 3π/2 → topmost point
   const mins  = Math.floor(remaining / 60);
   const secs  = remaining % 60;
-  const label = mins + ':' + String(secs).padStart(2, '0');
   actx.font        = 'bold 13px Cinzel, serif';
-  actx.fillStyle   = 'rgba(253,232,122,0.85)';
+  actx.fillStyle   = 'rgba(253,232,122,0.9)';
   actx.textAlign   = 'center';
   actx.shadowColor = '#f5c842';
   actx.shadowBlur  = 8;
-  actx.fillText(label, w / 2, h - 3);
+  actx.fillText(mins + ':' + String(secs).padStart(2, '0'), cx, apex.y + 16);
   actx.shadowBlur  = 0;
 }
 
