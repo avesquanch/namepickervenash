@@ -284,13 +284,14 @@ h1 span { color: var(--ember); text-shadow: var(--glow-ember); }
 /* timer arc container */
 #timer-arc-wrap {
   width: 100%;
-  height: 60px;
+  height: 52px;
   position: relative;
   display: none;
 }
 #timer-arc-wrap.active { display: block; }
 #timer-arc-canvas {
   width: 100%; height: 100%;
+  display: block;
 }
 
 /* wheel container */
@@ -410,6 +411,45 @@ h1 span { color: var(--ember); text-shadow: var(--glow-ember); }
   color: var(--ember);
 }
 #btn-remove:hover { background: rgba(232,99,42,0.3); box-shadow: 0 0 12px rgba(232,99,42,0.3); }
+
+/* ── DUNK & EGG PHOTO ── */
+#photo-wrap {
+  width: 100%;
+  max-width: min(420px, 90vw);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(245,200,66,0.22);
+  box-shadow: 0 0 28px rgba(232,99,42,0.18), 0 0 6px rgba(0,0,0,0.6);
+  position: relative;
+}
+#photo-wrap img {
+  width: 100%;
+  display: block;
+  filter: brightness(0.88) contrast(1.05) saturate(0.9) sepia(0.08);
+}
+/* vignette overlay */
+#photo-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to top,  rgba(5,10,26,0.65) 0%, transparent 45%),
+    linear-gradient(to bottom, rgba(5,10,26,0.25) 0%, transparent 30%);
+  pointer-events: none;
+}
+#photo-caption {
+  position: absolute;
+  bottom: 10px;
+  left: 0; right: 0;
+  text-align: center;
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(245,200,66,0.65);
+  font-family: 'Cinzel', serif;
+  pointer-events: none;
+  text-shadow: 0 0 8px rgba(0,0,0,0.9);
+}
 
 /* responsive */
 @media (max-width: 680px) {
@@ -535,6 +575,12 @@ h1 span { color: var(--ember); text-shadow: var(--glow-ember); }
         </div>
         <canvas id="wheel-canvas"></canvas>
       </div>
+      <!-- Dunk & Egg photo — save the image as dunk-egg.jpg in this folder -->
+      <div id="photo-wrap">
+        <img src="dunk-egg.jpg" alt="Dunk and Egg looking at the stars"
+             onerror="document.getElementById('photo-wrap').style.display='none'"/>
+        <div id="photo-caption">Ser Duncan the Tall &amp; Egg &mdash; "The Stars Shall Decide"</div>
+      </div>
     </div>
   </div>
 </div>
@@ -607,7 +653,7 @@ function resizeCanvases() {
   wheelCanvas.width  = sz;
   wheelCanvas.height = sz;
   arcCanvas.width    = document.getElementById('timer-arc-wrap').offsetWidth;
-  arcCanvas.height   = 60;
+  arcCanvas.height   = 52;
   drawWheel();
 }
 
@@ -833,21 +879,22 @@ function snapToName() {
   if (n === 0) return;
   const slice = (Math.PI * 2) / n;
 
-  // Pointer is at top (−π/2). We need to find which slice is at the top.
-  // A slice i covers [spinAngle + i*slice − π/2, spinAngle + (i+1)*slice − π/2]
-  // The top is at angle 0 in screen coords (−π/2 + spinAngle offset).
-  // Normalize spinAngle
-  const norm = ((spinAngle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
-  // The "top" in wheel coordinates is at angle = −spinAngle + π/2
-  const topAngle = (((-spinAngle + Math.PI / 2) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
-  const idx = Math.floor(topAngle / slice) % n;
+  // Pointer is at canvas angle −π/2 (top).
+  // Slice i spans [spinAngle + i*slice − π/2, spinAngle + (i+1)*slice − π/2].
+  // Top (−π/2) is inside slice i when: i*slice ≤ −spinAngle ≤ (i+1)*slice
+  // → idx = floor((−spinAngle mod 2π) / slice)
+  const neg = ((-spinAngle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+  const idx = Math.floor(neg / slice) % n;
 
   selectedName = names[idx];
 
-  // Snap so selected slice is perfectly centered at top
-  const targetMid = idx * slice + slice / 2;
-  const targetAngle = Math.PI / 2 - targetMid;
-  spinAngle = ((targetAngle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+  // Snap so slice idx midpoint is exactly at top.
+  // midpoint at top when: spinAngle + (idx+0.5)*slice − π/2 = −π/2
+  //                    → spinAngle = −(idx+0.5)*slice
+  // Find nearest congruent angle to current spinAngle to avoid visual jump.
+  const T = -(idx + 0.5) * slice;
+  const k = Math.round((spinAngle - T) / (Math.PI * 2));
+  spinAngle = T + k * Math.PI * 2;
 
   drawWheel();
   showPopup(selectedName);
@@ -1022,72 +1069,79 @@ function updateCountdownDisplay() {
   document.getElementById('countdown-num').textContent = m + ':' + String(s).padStart(2, '0');
 }
 
-// Shooting star arc animation
-let shootingStarPos = 0;
-let ssAnimFrame = null;
-
+// Horizontal shooting star timer
 function drawTimerArc(fraction, remaining) {
   const w = arcCanvas.width, h = arcCanvas.height;
   actx.clearRect(0, 0, w, h);
 
-  const cx = w / 2, cy = h + 10;
-  const r  = Math.min(w * 0.46, 120);
-  const startA = Math.PI + 0.15;
-  const endA   = Math.PI * 2 - 0.15;
-  const range  = endA - startA;
+  const pad   = 18;
+  const trackY = Math.round(h * 0.42);  // upper portion; label sits below
+  const trackW = w - pad * 2;
 
-  // Track arc (dim)
+  // Star travels left→right as time runs out (fraction 1→0)
+  const starX = pad + (1 - fraction) * trackW;
+
+  // Dim full track
   actx.beginPath();
-  actx.arc(cx, cy, r, startA, endA);
+  actx.moveTo(pad, trackY);
+  actx.lineTo(pad + trackW, trackY);
   actx.strokeStyle = 'rgba(100,150,255,0.18)';
-  actx.lineWidth = 3;
+  actx.lineWidth = 2;
+  actx.setLineDash([5, 9]);
   actx.stroke();
+  actx.setLineDash([]);
 
-  // Progress arc
-  const progEnd = startA + range * (1 - fraction);
+  // Glowing consumed section (left of star)
   actx.beginPath();
-  actx.arc(cx, cy, r, startA, progEnd);
-  actx.strokeStyle = 'rgba(245,200,66,0.55)';
-  actx.lineWidth = 2.5;
+  actx.moveTo(pad, trackY);
+  actx.lineTo(starX, trackY);
+  actx.strokeStyle = 'rgba(245,200,66,0.3)';
+  actx.lineWidth = 2;
   actx.stroke();
 
-  // Shooting star at current position
-  const ssAngle = startA + range * (1 - fraction);
-  const sx = cx + r * Math.cos(ssAngle);
-  const sy = cy + r * Math.sin(ssAngle);
-
-  // Tail (gradient behind)
-  const tailLen = 0.18;
-  const tailStart = ssAngle - tailLen;
-  for (let t = 0; t < 10; t++) {
-    const ta = tailStart + (tailLen * t / 10);
-    const tx = cx + r * Math.cos(ta);
-    const ty = cy + r * Math.sin(ta);
+  // Comet tail (linear gradient behind star)
+  const tailLen = Math.min(60, starX - pad);
+  if (tailLen > 0) {
+    const tailGrad = actx.createLinearGradient(starX - tailLen, trackY, starX, trackY);
+    tailGrad.addColorStop(0, 'transparent');
+    tailGrad.addColorStop(1, 'rgba(245,200,66,0.55)');
     actx.beginPath();
-    actx.arc(tx, ty, 1.5 * (t / 10), 0, Math.PI * 2);
-    actx.fillStyle = `rgba(245,200,66,${0.05 + 0.3 * (t / 10)})`;
-    actx.fill();
+    actx.moveTo(starX - tailLen, trackY);
+    actx.lineTo(starX, trackY);
+    actx.strokeStyle = tailGrad;
+    actx.lineWidth = 3;
+    actx.stroke();
   }
 
   // Star head
   actx.beginPath();
-  actx.arc(sx, sy, 4, 0, Math.PI * 2);
-  actx.fillStyle = '#fff';
+  actx.arc(starX, trackY, 5, 0, Math.PI * 2);
+  actx.fillStyle = '#ffffff';
   actx.shadowColor = '#f5c842';
-  actx.shadowBlur  = 12;
+  actx.shadowBlur  = 14;
   actx.fill();
   actx.shadowBlur  = 0;
 
-  // Time label in center-ish
-  const mins = Math.floor(remaining / 60);
-  const secs = remaining % 60;
+  // 4-point spikes
+  [0, Math.PI / 2, Math.PI, 3 * Math.PI / 2].forEach(a => {
+    actx.beginPath();
+    actx.moveTo(starX + Math.cos(a) * 4, trackY + Math.sin(a) * 4);
+    actx.lineTo(starX + Math.cos(a) * 10, trackY + Math.sin(a) * 10);
+    actx.strokeStyle = 'rgba(253,232,122,0.55)';
+    actx.lineWidth = 1.5;
+    actx.stroke();
+  });
+
+  // Time label centred below track
+  const mins  = Math.floor(remaining / 60);
+  const secs  = remaining % 60;
   const label = mins + ':' + String(secs).padStart(2, '0');
-  actx.font = 'bold 14px Cinzel, serif';
-  actx.fillStyle = 'rgba(253,232,122,0.85)';
-  actx.textAlign = 'center';
+  actx.font        = 'bold 13px Cinzel, serif';
+  actx.fillStyle   = 'rgba(253,232,122,0.85)';
+  actx.textAlign   = 'center';
   actx.shadowColor = '#f5c842';
   actx.shadowBlur  = 8;
-  actx.fillText(label, cx, h - 8);
+  actx.fillText(label, w / 2, h - 3);
   actx.shadowBlur  = 0;
 }
 
